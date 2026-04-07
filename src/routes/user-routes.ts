@@ -65,16 +65,11 @@ export const userRoutes = new Elysia({ prefix: "/api/users" })
       }),
     }
   )
-  .guard({
-    async beforeHandle({ headers }) {
-      const auth = headers["authorization"];
-      if (!auth || !auth.startsWith("Bearer ")) {
-        throw new ResponseError(401, "Unauthorized");
-      }
-    },
-  })
   .derive(async ({ headers }) => {
-    const auth = headers["authorization"]!;
+    const auth = headers["authorization"];
+    if (!auth || !auth.startsWith("Bearer ")) {
+      throw new ResponseError(401, "Unauthorized");
+    }
     const token = auth.replace("Bearer ", "");
     const user = await getCurrentUser(token);
     return { user, token };
