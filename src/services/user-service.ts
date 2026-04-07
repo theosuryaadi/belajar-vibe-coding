@@ -2,6 +2,7 @@ import { eq } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 import { db } from "../db";
 import { users, sessions } from "../db/schema";
+import { ResponseError } from "../utils/errors";
 
 export async function registerUser(
   name: string,
@@ -15,7 +16,7 @@ export async function registerUser(
     .where(eq(users.email, email));
 
   if (existing.length > 0) {
-    throw new Error("User already exists");
+    throw new ResponseError(400, "User already exists");
   }
 
   // Hash password dengan bcrypt
@@ -39,7 +40,11 @@ export async function registerUser(
     .from(users)
     .where(eq(users.id, Number(result[0].insertId)));
 
-  return newUser[0];
+  if (newUser.length === 0) {
+    throw new ResponseError(500, "Failed to retrieve user after registration");
+  }
+
+  return newUser[0]!;
 }
 
 export async function loginUser(email: string, password: string) {
@@ -50,7 +55,7 @@ export async function loginUser(email: string, password: string) {
     .where(eq(users.email, email));
 
   if (user.length === 0) {
-    throw new Error("User not found");
+    throw new ResponseError(400, "User not found");
   }
 
   const foundUser = user[0]!;
@@ -59,7 +64,7 @@ export async function loginUser(email: string, password: string) {
   const isValid = await bcrypt.compare(password, foundUser.password);
 
   if (!isValid) {
-    throw new Error("User not found");
+    throw new ResponseError(400, "User not found");
   }
 
   // Generate UUID token
@@ -82,7 +87,7 @@ export async function getCurrentUser(token: string) {
     .where(eq(sessions.token, token));
 
   if (session.length === 0) {
-    throw new Error("Unauthorized");
+    throw new ResponseError(401, "Unauthorized");
   }
 
   const foundSession = session[0]!;
@@ -99,7 +104,7 @@ export async function getCurrentUser(token: string) {
     .where(eq(users.id, foundSession.userId!));
 
   if (user.length === 0) {
-    throw new Error("Unauthorized");
+    throw new ResponseError(401, "Unauthorized");
   }
 
   return user[0]!;
@@ -113,7 +118,7 @@ export async function logoutUser(token: string) {
     .where(eq(sessions.token, token));
 
   if (session.length === 0) {
-    throw new Error("Unauthorized");
+    throw new ResponseError(401, "Unauthorized");
   }
 
   // Hapus session dari database
