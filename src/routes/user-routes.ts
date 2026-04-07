@@ -57,6 +57,26 @@ export const userRoutes = new Elysia({ prefix: "/api/users" })
         email: t.String({ format: "email", maxLength: 255 }),
         password: t.String({ minLength: 6, maxLength: 128 }),
       }),
+      detail: {
+        tags: ["Authentication"],
+        summary: "Mendaftarkan Pengguna Baru",
+        description: "Menambahkan user baru ke sistem. Password akan di-hash menggunakan Bcrypt.",
+      },
+      response: {
+        201: t.Object({
+          message: t.String(),
+          data: t.Object({
+            id: t.Number(),
+            name: t.String(),
+            email: t.String(),
+            createdAt: t.Date(),
+          }),
+        }, { description: "User berhasil dibuat" }),
+        400: t.Object({
+          message: t.String(),
+          error: t.String(),
+        }, { description: "Validasi gagal atau user sudah terdaftar" }),
+      },
     }
   )
   .post(
@@ -72,6 +92,20 @@ export const userRoutes = new Elysia({ prefix: "/api/users" })
         email: t.String({ format: "email", maxLength: 255 }),
         password: t.String({ minLength: 6, maxLength: 128 }),
       }),
+      detail: {
+        tags: ["Authentication"],
+        summary: "Login Pengguna",
+        description: "Memverifikasi kredensial dan mengembalikan token UUID.",
+      },
+      response: {
+        200: t.Object({
+          data: t.String(),
+        }, { description: "Login berhasil, mengembalikan token" }),
+        400: t.Object({
+          message: t.String(),
+          error: t.String(),
+        }, { description: "Email atau password salah" }),
+      },
     }
   )
   .derive(async ({ headers }) => {
@@ -87,10 +121,45 @@ export const userRoutes = new Elysia({ prefix: "/api/users" })
     return {
       data: user,
     };
+  }, {
+    detail: {
+      tags: ["Authentication"],
+      summary: "Ambil Profil User",
+      description: "Mendapatkan data user yang sedang login (Membutuhkan Bearer Token).",
+    },
+    response: {
+      200: t.Object({
+        data: t.Object({
+          id: t.Number(),
+          name: t.String(),
+          email: t.String(),
+          createdAt: t.Date(),
+        }),
+      }, { description: "Data user berhasil diambil" }),
+      401: t.Object({
+        message: t.String(),
+        error: t.String(),
+      }, { description: "Tidak terautentikasi" }),
+    },
   })
   .delete("/logout", async ({ token }) => {
     await logoutUser(token);
     return {
       data: "OK",
     };
+  }, {
+    detail: {
+      tags: ["Authentication"],
+      summary: "Logout Sesi",
+      description: "Menghapus session token dari database.",
+    },
+    response: {
+      200: t.Object({
+        data: t.String(),
+      }, { description: "Logout berhasil" }),
+      401: t.Object({
+        message: t.String(),
+        error: t.String(),
+      }, { description: "Token tidak valid atau sudah kadaluwarsa" }),
+    },
   });
