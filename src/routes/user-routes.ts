@@ -57,6 +57,15 @@ export const userRoutes = new Elysia({ prefix: "/api/users" })
         email: t.String({ format: "email", maxLength: 255 }),
         password: t.String({ minLength: 6, maxLength: 128 }),
       }),
+      detail: {
+        tags: ["Authentication"],
+        summary: "Mendaftarkan Pengguna Baru",
+        description: "Menambahkan user baru ke sistem. Password akan di-hash menggunakan Bcrypt.",
+        responses: {
+          201: { description: "User berhasil dibuat" },
+          400: { description: "Validasi gagal atau user sudah terdaftar" },
+        },
+      },
     }
   )
   .post(
@@ -72,6 +81,15 @@ export const userRoutes = new Elysia({ prefix: "/api/users" })
         email: t.String({ format: "email", maxLength: 255 }),
         password: t.String({ minLength: 6, maxLength: 128 }),
       }),
+      detail: {
+        tags: ["Authentication"],
+        summary: "Login Pengguna",
+        description: "Memverifikasi kredensial dan mengembalikan token UUID.",
+        responses: {
+          200: { description: "Login berhasil, mengembalikan token" },
+          400: { description: "Email atau password salah" },
+        },
+      },
     }
   )
   .derive(async ({ headers }) => {
@@ -87,10 +105,30 @@ export const userRoutes = new Elysia({ prefix: "/api/users" })
     return {
       data: user,
     };
+  }, {
+    detail: {
+      tags: ["Authentication"],
+      summary: "Ambil Profil User",
+      description: "Mendapatkan data user yang sedang login (Membutuhkan Bearer Token).",
+      responses: {
+        200: { description: "Data user berhasil diambil" },
+        401: { description: "Tidak terautentikasi" },
+      },
+    },
   })
   .delete("/logout", async ({ token }) => {
     await logoutUser(token);
     return {
       data: "OK",
     };
+  }, {
+    detail: {
+      tags: ["Authentication"],
+      summary: "Logout Sesi",
+      description: "Menghapus session token dari database.",
+      responses: {
+        200: { description: "Logout berhasil" },
+        401: { description: "Token tidak valid atau sudah kadaluwarsa" },
+      },
+    },
   });
