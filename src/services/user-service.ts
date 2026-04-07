@@ -4,6 +4,17 @@ import { db } from "../db";
 import { users, sessions } from "../db/schema";
 import { ResponseError } from "../utils/errors";
 
+/**
+ * Mendaftarkan pengguna baru ke dalam sistem.
+ * Melakukan pengecekan duplikasi email, hashing password dengan bcrypt,
+ * dan menyimpan entri pengguna baru ke database MySQL.
+ *
+ * @param name Nama lengkap pengguna
+ * @param email Alamat email pengguna (harus unik)
+ * @param password Kata sandi mentah pengguna
+ * @returns Objek profil pengguna baru (tanpa password)
+ * @throws {ResponseError} Jika email sudah terdaftar atau gagal memuat data sesudah di-insert
+ */
 export async function registerUser(
   name: string,
   email: string,
@@ -47,6 +58,16 @@ export async function registerUser(
   return newUser[0]!;
 }
 
+/**
+ * Melakukan proses autentikasi pengguna.
+ * Memeriksa email di database, memverifikasi kata sandi dengan bcrypt,
+ * dan jika valid, sistem akan menerbitkan UUID token baru sebagai sesi pengguna aktif.
+ *
+ * @param email Alamat email pengguna
+ * @param password Kata sandi pengguna untuk diverifikasi
+ * @returns UUID string sebagai token sesi otorisasi
+ * @throws {ResponseError} Jika email atau password tidak cocok (400 Bad Request)
+ */
 export async function loginUser(email: string, password: string) {
   // Cari user berdasarkan email
   const user = await db
@@ -79,6 +100,15 @@ export async function loginUser(email: string, password: string) {
   return token;
 }
 
+/**
+ * Mengambil informasi profil detail pengguna berdasarkan token sesi yang berlaku.
+ * Fungsi ini memastikan token aktif di database,
+ * lalu mengekstraksi struktur profil sang pemilik token (tanpa mengambil kata sandi).
+ *
+ * @param token UUID token sesi autentikasi pengguna
+ * @returns Objek data diri dari pengguna yang login
+ * @throws {ResponseError} Jika token tidak ditemukan, usang, atau tidak valid (401 Unauthorized)
+ */
 export async function getCurrentUser(token: string) {
   // Cari session berdasarkan token
   const session = await db
@@ -110,6 +140,15 @@ export async function getCurrentUser(token: string) {
   return user[0]!;
 }
 
+/**
+ * Memutus secara permanen sesi pengguna.
+ * Fungsi ini bertugas membersihkan dan menghancurkan UUID token dari tabel sessions database.
+ * Membuat token tersebut tidak bisa dieksploitasi/digunakan lagi untuk request selanjutnya.
+ *
+ * @param token UUID token autentikasi sesi yang akan dihapus
+ * @returns String "OK" sebagai tanda keberhasilan operasional
+ * @throws {ResponseError} Jika token tidak valid / sudah dihapus (401 Unauthorized)
+ */
 export async function logoutUser(token: string) {
   // Cari session berdasarkan token
   const session = await db
