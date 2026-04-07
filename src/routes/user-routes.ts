@@ -26,6 +26,15 @@ export const userRoutes = new Elysia({ prefix: "/api/users" })
       };
     }
 
+    if (error && (error as any).code === "ER_DUP_ENTRY") {
+      set.status = 400;
+      return {
+        message: "Email is already registered",
+        error: "Bad Request",
+      };
+    }
+
+    console.error("[Server Error]:", error);
     set.status = 500;
     return {
       message: "Internal server error",
