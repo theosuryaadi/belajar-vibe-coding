@@ -73,3 +73,34 @@ export async function loginUser(email: string, password: string) {
 
   return token;
 }
+
+export async function getCurrentUser(token: string) {
+  // Cari session berdasarkan token
+  const session = await db
+    .select()
+    .from(sessions)
+    .where(eq(sessions.token, token));
+
+  if (session.length === 0) {
+    throw new Error("Unauthorized");
+  }
+
+  const foundSession = session[0]!;
+
+  // Ambil data user tanpa password
+  const user = await db
+    .select({
+      id: users.id,
+      name: users.name,
+      email: users.email,
+      createdAt: users.createdAt,
+    })
+    .from(users)
+    .where(eq(users.id, foundSession.userId!));
+
+  if (user.length === 0) {
+    throw new Error("Unauthorized");
+  }
+
+  return user[0]!;
+}
